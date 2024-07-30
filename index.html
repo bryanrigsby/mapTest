@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Map with Route</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+  <style>
+    #map {
+      height: 500px;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <h1>Map with Route</h1>
+  <div id="map"></div>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mapbox/polyline@1.2.1/src/polyline.min.js"></script>
+
+
+  <script>
+    // Initialize the map
+    const map = L.map('map').setView([51.505, -0.09], 13);
+
+    // Add a tile layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    // Fetch route data from OpenRouteService
+    const API_KEY = '5b3ce3597851110001cf6248ae702dade6cc43899548f4933c480126'; // Replace with your OpenRouteService API key
+
+    axios.post('https://api.openrouteservice.org/v2/directions/driving-car', {
+      coordinates: [
+        [8.681495, 49.41443], // Start point (lng, lat)
+        [8.687872, 49.420318]  // End point (lng, lat)
+      ]
+    }, {
+      headers: {
+        'Authorization': API_KEY,
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(response => {
+        console.log(response)
+        const encodedPolyline = response.data.routes[0].geometry; // Encoded polyline
+        const decodedPolyline = polyline.decode(encodedPolyline);
+
+        console.log('Decoded Coordinates:', decodedPolyline);
+
+
+          // Convert to GeoJSON
+        const routeGeoJson = {
+            type: 'Feature',
+            geometry: {
+            type: 'LineString',
+            coordinates: decodedPolyline.map(coord => [coord[1], coord[0]])
+            }
+        };
+
+      
+        L.geoJSON(routeGeoJson).addTo(map);
+    })
+    .catch(error => {
+      console.error('Error fetching route:', error);
+    });
+  </script>
+</body>
+</html>
